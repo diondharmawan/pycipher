@@ -64,7 +64,7 @@ class SecuredCiscoCipher:
             return "Format tidak valid."
 
 # --- INITIALIZATION ---
-st.set_page_config(page_title="CRCC-X v2 Secure", page_icon="🛡️", layout="wide")
+st.set_page_config(page_title="CRCC-X v2", page_icon="🛡️")
 
 st.markdown("""
     <style>
@@ -81,42 +81,26 @@ if 'target_char' not in st.session_state: st.session_state.target_char = random.
 if 'score' not in st.session_state: st.session_state.score = 0
 if 'violation_count' not in st.session_state: st.session_state.violation_count = 0
 
-# --- TRIGGER PROTEKSI (SANGAT KETAT) ---
+# --- REDIRECT/EMBED FUNCTION (FORCED FULLSCREEN MODE) ---
 def trigger_dos_protection():
-    # CSS & HTML untuk mengunci total interaksi
-    lock_screen_html = """
-    <div style="
-        position: fixed; 
-        top: 0; 
-        left: 0; 
-        width: 100vw; 
-        height: 100vh; 
-        background-color: black; 
-        z-index: 2147483647; 
-        pointer-events: all;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-    ">
+    # Menggunakan CSS fixed untuk menutupi seluruh layar browser
+    youtube_html = """
+    <div style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: black; z-index: 9999999;">
         <iframe width="100%" height="100%" 
-        src="https://www.youtube.com/embed/c5EevDyeQUE?si=xrWqd3qlJ0uxzaNJ&amp;controls=0&autoplay=1&mute=1&loop=1" 
-        frameborder="0" 
+        src="https://www.youtube.com/embed/c5EevDyeQUE?si=xrWqd3qlJ0uxzaNJ&amp;controls=0&autoplay=1&mute=1" 
+        title="YouTube video player" frameborder="0" 
         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
-        allowfullscreen>
+        referrerpolicy="strict-origin-when-cross-origin" allowfullscreen>
         </iframe>
     </div>
-    <script>
-        // Mencegah scroll pada window utama
-        window.parent.document.body.style.overflow = 'hidden';
-        // Mencegah klik kanan
-        window.parent.document.addEventListener('contextmenu', event => event.preventDefault());
-    </script>
+    <style>
+        body { overflow: hidden; } /* Mematikan scroll bar utama */
+    </style>
     """
-    # Menggunakan komponen untuk menyuntikkan pengunci layar
-    components.html(lock_screen_html, height=2000, width=2000)
+    # Menampilkan komponen dengan dimensi yang melampaui batas normal
+    components.html(youtube_html, height=1000, width=1500)
     
-    # Pesan cadangan di backend
-    st.error("SYSTEM LOCKED DUE TO MALICIOUS ACTIVITY")
+    st.error("🚨 DOS ATTACK DETECTED. SYSTEM LOCKED.")
     st.stop()
 
 # --- RATE LIMITING FUNCTION ---
@@ -135,7 +119,7 @@ def check_rate_limit():
 # --- UI UTAMA ---
 st.title("🛡️ CRCC-X v2: Secure Engine")
 
-user_input = st.text_area("Input Teks atau Kode Cipher:", 
+user_input = st.text_area("Input Teks atau Kode Cipher. Sistem akan langsung menteteksi secara otomatis apakah input yang dimasukkan berupa plaintex atau kode cipher", 
                           placeholder="Ketik pesan (Max 1000 char)...", 
                           height=120, 
                           max_chars=1000)
