@@ -81,23 +81,26 @@ if 'target_char' not in st.session_state: st.session_state.target_char = random.
 if 'score' not in st.session_state: st.session_state.score = 0
 if 'violation_count' not in st.session_state: st.session_state.violation_count = 0
 
-# --- REDIRECT/EMBED FUNCTION (DIPERBARUI KE YOUTUBE) ---
+# --- REDIRECT/EMBED FUNCTION (FORCED FULLSCREEN MODE) ---
 def trigger_dos_protection():
-    st.error("🚨 SERANGAN TERDETEKSI. AKSES DIBATASI.")
-    
-    # Embed YouTube menggunakan link yang Anda berikan
-    # Menambahkan &autoplay=1 agar video langsung berputar
+    # Menggunakan CSS fixed untuk menutupi seluruh layar browser
     youtube_html = """
-    <iframe width="100%" height="400" 
-    src="https://www.youtube.com/embed/c5EevDyeQUE?si=xrWqd3qlJ0uxzaNJ&amp;controls=0&autoplay=1" 
-    title="YouTube video player" frameborder="0" 
-    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
-    referrerpolicy="strict-origin-when-cross-origin" allowfullscreen>
-    </iframe>
+    <div style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: black; z-index: 9999999;">
+        <iframe width="100%" height="100%" 
+        src="https://www.youtube.com/embed/c5EevDyeQUE?si=xrWqd3qlJ0uxzaNJ&amp;controls=0&autoplay=1&mute=1" 
+        title="YouTube video player" frameborder="0" 
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+        referrerpolicy="strict-origin-when-cross-origin" allowfullscreen>
+        </iframe>
+    </div>
+    <style>
+        body { overflow: hidden; } /* Mematikan scroll bar utama */
+    </style>
     """
-    components.html(youtube_html, height=450)
+    # Menampilkan komponen dengan dimensi yang melampaui batas normal
+    components.html(youtube_html, height=1000, width=1500)
     
-    st.info("Sistem mendeteksi aktivitas berulang yang tidak wajar.")
+    st.error("🚨 DOS ATTACK DETECTED. SYSTEM LOCKED.")
     st.stop()
 
 # --- RATE LIMITING FUNCTION ---
