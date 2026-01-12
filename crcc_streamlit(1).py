@@ -1,5 +1,5 @@
 import streamlit as st
-import streamlit.components.v1 as components  # Tambahan untuk redirect & embed
+import streamlit.components.v1 as components 
 import re
 import time
 import random
@@ -66,7 +66,6 @@ class SecuredCiscoCipher:
 # --- INITIALIZATION ---
 st.set_page_config(page_title="CRCC-X v2 Secure", page_icon="🛡️")
 
-# CSS untuk menyembunyikan elemen standar
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
@@ -77,43 +76,39 @@ st.markdown("""
 
 cipher = SecuredCiscoCipher()
 
-# Initialize Session States
 if 'last_action_time' not in st.session_state: st.session_state.last_action_time = 0
 if 'target_char' not in st.session_state: st.session_state.target_char = random.choice(string.ascii_lowercase)
 if 'score' not in st.session_state: st.session_state.score = 0
 if 'violation_count' not in st.session_state: st.session_state.violation_count = 0
 
-# --- REDIRECT/EMBED FUNCTION (PERUBAHAN DI SINI) ---
+# --- REDIRECT/EMBED FUNCTION (DIPERBARUI KE YOUTUBE) ---
 def trigger_dos_protection():
-    st.error("🚨 SERANGAN TERDETEKSI. ANDA WAJIB MENONTON VIDEO INI SEBELUM MELANJUTKAN.")
+    st.error("🚨 SERANGAN TERDETEKSI. AKSES DIBATASI.")
     
-    # Script embed streamable yang diberikan
-    streamable_html = """
-    <div style="position:relative; width:100%; height:0px; padding-bottom:62.284%">
-        <iframe allow="fullscreen;autoplay" allowfullscreen height="100%" 
-        src="https://streamable.com/e/ldpxpp?autoplay=1&nocontrols=1" 
-        width="100%" style="border:none; width:100%; height:100%; position:absolute; left:0px; top:0px; overflow:hidden;">
-        </iframe>
-    </div>
+    # Embed YouTube menggunakan link yang Anda berikan
+    # Menambahkan &autoplay=1 agar video langsung berputar
+    youtube_html = """
+    <iframe width="100%" height="400" 
+    src="https://www.youtube.com/embed/c5EevDyeQUE?si=xrWqd3qlJ0uxzaNJ&amp;controls=0&autoplay=1" 
+    title="YouTube video player" frameborder="0" 
+    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+    referrerpolicy="strict-origin-when-cross-origin" allowfullscreen>
+    </iframe>
     """
-    # Menampilkan video secara langsung di aplikasi
-    components.html(streamable_html, height=500)
+    components.html(youtube_html, height=450)
     
-    st.info("Akses Anda telah dibatasi karena aktivitas mencurigakan.")
+    st.info("Sistem mendeteksi aktivitas berulang yang tidak wajar.")
     st.stop()
 
 # --- RATE LIMITING FUNCTION ---
 def check_rate_limit():
     current_time = time.time()
-    # Limit 1.5 detik
     if current_time - st.session_state.last_action_time < 1.5:
         st.session_state.violation_count += 1
-        # Jika melanggar lebih dari 4 kali berturut-turut
         if st.session_state.violation_count >= 4:
             trigger_dos_protection()
         return False
     
-    # Jika berhasil (tidak melanggar), reset violation count
     st.session_state.last_action_time = current_time
     st.session_state.violation_count = 0
     return True
