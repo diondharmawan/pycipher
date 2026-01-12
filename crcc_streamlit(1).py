@@ -1,4 +1,5 @@
 import streamlit as st
+import streamlit.components.v1 as components  # Tambahan untuk redirect
 import re
 import time
 import random
@@ -24,9 +25,8 @@ class SecuredCiscoCipher:
         return self.alphabet[(value - 1) % 26]
 
     def encrypt(self, text):
-        # Anti-Injection: Hanya izinkan alfabet dan spasi
         text = re.sub(r'[^a-zA-Z\s]', '', text)
-        if len(text) > 500: text = text[:500] # Hard limit length
+        if len(text) > 500: text = text[:500] 
         
         encoded_words = []
         for char in text.lower():
@@ -41,11 +41,10 @@ class SecuredCiscoCipher:
         return "  ".join(encoded_words)
 
     def decrypt(self, cipher_text):
-        # Anti-Injection & DDoS: Limit jumlah blok dan bersihkan karakter berbahaya
         cipher_text = re.sub(r'[^a-zA-Z0-9\s/|]', '', cipher_text)
         blocks = cipher_text.replace('\xa0', ' ').split("  ")
         
-        if len(blocks) > 200: # Anti-DDoS limit
+        if len(blocks) > 200:
             return "Error: Pesan terlalu panjang."
 
         try:
@@ -54,7 +53,6 @@ class SecuredCiscoCipher:
                 if block.strip() == "/":
                     decoded += " "
                 elif "|" in block:
-                    # Pastikan format blok valid sebelum diproses
                     parts = block.split("|")
                     h_val = parts[-1].strip()
                     if h_val.isdigit():
@@ -68,7 +66,7 @@ class SecuredCiscoCipher:
 # --- INITIALIZATION ---
 st.set_page_config(page_title="CRCC-X v2 Secure", page_icon="🛡️")
 
-# Clean UI Header Removal
+# CSS untuk menyembunyikan elemen standar
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
@@ -82,76 +80,4 @@ cipher = SecuredCiscoCipher()
 # Initialize Session States
 if 'last_action_time' not in st.session_state: st.session_state.last_action_time = 0
 if 'target_char' not in st.session_state: st.session_state.target_char = random.choice(string.ascii_lowercase)
-if 'score' not in st.session_state: st.session_state.score = 0
-
-# --- RATE LIMITING FUNCTION ---
-def check_rate_limit():
-    current_time = time.time()
-    # Limit 1 request per 1.5 detik
-    if current_time - st.session_state.last_action_time < 1.5:
-        return False
-    st.session_state.last_action_time = current_time
-    return True
-
-# --- UI UTAMA ---
-st.title("🛡️ CRCC-X v2: Secure Engine")
-
-# Anti-DDoS: max_chars=1000 limit di tingkat UI
-user_input = st.text_area("Input Teks atau Kode Cipher:", 
-                          placeholder="Ketik pesan (Max 1000 char)...", 
-                          height=120, 
-                          max_chars=1000)
-
-col1, col2, col3 = st.columns([1, 1, 1])
-with col2:
-    run_button = st.button("🚀 JALANKAN PROSES", use_container_width=True)
-
-if run_button:
-    if not check_rate_limit():
-        st.warning("⚠️ Terlalu cepat! Harap tunggu sebentar (Rate Limited).")
-    elif user_input.strip():
-        if "|" in user_input:
-            with st.spinner('Menganalisis keamanan & mendekripsi...'):
-                result = cipher.decrypt(user_input)
-                st.success(f"Hasil Dekripsi: **{result}**")
-        else:
-            with st.spinner('Mengamankan data & mengenkripsi...'):
-                st.code(cipher.encrypt(user_input))
-    else:
-        st.warning("Input tidak boleh kosong.")
-
-st.markdown("---")
-st.write("### 🎮 Tebak Cipher")
-
-# Box Tantangan
-st.subheader(f"Enkripsi Huruf: :red[{st.session_state.target_char}]")
-player_guess = st.text_input("Jawabanmu:", placeholder="v1 v2 v3 | h", max_chars=50)
-
-g_col1, g_col2 = st.columns(2)
-
-with g_col1:
-    if st.button("🎯 Cek Jawaban", use_container_width=True):
-        if not check_rate_limit():
-            st.warning("Rate limit aktif.")
-        else:
-            correct_answer = cipher.encrypt(st.session_state.target_char).strip()
-            if player_guess.strip() == correct_answer:
-                st.balloons()
-                st.success("Tepat! +10 XP")
-                st.session_state.score += 10
-                st.session_state.target_char = random.choice(string.ascii_lowercase)
-                time.sleep(1)
-                st.rerun()
-            else:
-                st.error("Jawaban tidak sesuai dengan algoritma router.")
-
-with g_col2:
-    if st.button("🔄 Ganti Huruf", use_container_width=True):
-        st.session_state.target_char = random.choice(string.ascii_lowercase)
-        st.rerun()
-
-# Sidebar Stats
-st.sidebar.metric("Security Status", "PROTECTED")
-st.sidebar.metric("User Score", f"{st.session_state.score} XP")
-st.sidebar.divider()
-st.sidebar.info("Rate limit: 1.5s\nMax input: 1000 chars\nAnti-Injection: Active")
+if 'score' not in
