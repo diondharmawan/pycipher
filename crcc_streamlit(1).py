@@ -81,9 +81,7 @@ if 'target_char' not in st.session_state: st.session_state.target_char = random.
 if 'score' not in st.session_state: st.session_state.score = 0
 if 'violation_count' not in st.session_state: st.session_state.violation_count = 0
 
-# --- REDIRECT/EMBED FUNCTION (FORCED FULLSCREEN MODE) ---
 def trigger_dos_protection():
-    # Menggunakan CSS fixed untuk menutupi seluruh layar browser
     youtube_html = """
     <div style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: black; z-index: 9999999;">
         <iframe width="100%" height="100%" 
@@ -94,16 +92,13 @@ def trigger_dos_protection():
         </iframe>
     </div>
     <style>
-        body { overflow: hidden; } /* Mematikan scroll bar utama */
+        body { overflow: hidden; } 
     </style>
     """
-    # Menampilkan komponen dengan dimensi yang melampaui batas normal
     components.html(youtube_html, height=1000, width=1500)
-    
     st.error("🚨 DOS ATTACK DETECTED. SYSTEM LOCKED.")
     st.stop()
 
-# --- RATE LIMITING FUNCTION ---
 def check_rate_limit():
     current_time = time.time()
     if current_time - st.session_state.last_action_time < 1.5:
@@ -111,7 +106,6 @@ def check_rate_limit():
         if st.session_state.violation_count >= 4:
             trigger_dos_protection()
         return False
-    
     st.session_state.last_action_time = current_time
     st.session_state.violation_count = 0
     return True
@@ -119,8 +113,8 @@ def check_rate_limit():
 # --- UI UTAMA ---
 st.title("🛡️ CRCC-X v2: Secure Engine")
 
-user_input = st.text_area("Input Teks atau Kode Cipher. Sistem akan langsung menteteksi secara otomatis apakah input yang dimasukkan berupa plaintex atau kode cipher", 
-                          placeholder="Ketik pesan (Max 1000 char)...", 
+user_input = st.text_area("Input Teks atau Kode Cipher", 
+                          placeholder="Ketik pesan atau tempel kode cipher di sini...", 
                           height=120, 
                           max_chars=1000)
 
@@ -132,24 +126,57 @@ if run_button:
     if not check_rate_limit():
         st.warning(f"⚠️ Terlalu cepat! Pelanggaran: {st.session_state.violation_count}/4")
     elif user_input.strip():
+        # --- BOX VISUALISASI PROSES ---
         if "|" in user_input:
-            with st.spinner('Menganalisis keamanan & mendekripsi...'):
-                result = cipher.decrypt(user_input)
-                st.success(f"Hasil Dekripsi: **{result}**")
+            # PROSES DEKRIPSI
+            with st.status("🔍 Menganalisis & Mendekripsi Sinyal...", expanded=True) as status:
+                st.write("Mengidentifikasi blok data...")
+                progress_bar = st.progress(0)
+                log_box = st.empty()
+                
+                blocks = user_input.replace('\xa0', ' ').split("  ")
+                decoded_result = ""
+                
+                for i, block in enumerate(blocks):
+                    # Simulasi efek loading per karakter
+                    time.sleep(0.1) 
+                    char_decoded = cipher.decrypt(block)
+                    decoded_result += char_decoded
+                    log_box.code(f"Processing Block {i+1}: {block} \nResult: '{char_decoded}'")
+                    progress_bar.progress((i + 1) / len(blocks))
+                
+                status.update(label="✅ Dekripsi Selesai!", state="complete", expanded=False)
+                st.success(f"Hasil Akhir: **{decoded_result}**")
         else:
-            with st.spinner('Mengamankan data & mengenkripsi...'):
-                st.code(cipher.encrypt(user_input))
+            # PROSES ENKRIPSI
+            with st.status("🔐 Mengamankan & Enkripsi Data...", expanded=True) as status:
+                st.write("Menjalankan algoritma router cisco...")
+                progress_bar = st.progress(0)
+                log_box = st.empty()
+                
+                clean_text = re.sub(r'[^a-zA-Z\s]', '', user_input.lower())
+                encrypted_blocks = []
+                
+                for i, char in enumerate(clean_text):
+                    time.sleep(0.1)
+                    single_encrypt = cipher.encrypt(char)
+                    encrypted_blocks.append(single_encrypt)
+                    log_box.code(f"Char: '{char}' -> Encrypted: {single_encrypt}")
+                    progress_bar.progress((i + 1) / len(clean_text))
+                
+                final_cipher = "  ".join(encrypted_blocks)
+                status.update(label="✅ Enkripsi Berhasil!", state="complete", expanded=False)
+                st.code(final_cipher)
     else:
         st.warning("Input tidak boleh kosong.")
 
 st.markdown("---")
+# ... (Sisanya tetap sama seperti kode awal kamu)
 st.write("### 🎮 Tebak Cipher")
-
 st.subheader(f"Enkripsi Huruf: :red[{st.session_state.target_char}]")
 player_guess = st.text_input("Jawabanmu:", placeholder="v1 v2 v3 | h", max_chars=50)
 
 g_col1, g_col2 = st.columns(2)
-
 with g_col1:
     if st.button("🎯 Cek Jawaban", use_container_width=True):
         if not check_rate_limit():
@@ -171,7 +198,6 @@ with g_col2:
         st.session_state.target_char = random.choice(string.ascii_lowercase)
         st.rerun()
 
-# Sidebar Stats
 st.sidebar.metric("Security Status", "PROTECTED" if st.session_state.violation_count < 2 else "WARNING")
 st.sidebar.metric("User Score", f"{st.session_state.score} XP")
 st.sidebar.divider()
