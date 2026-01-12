@@ -3,14 +3,8 @@ import re
 import time
 import random
 import string
-import streamlit.components.v1 as components
-
-# --- KONFIGURASI KEAMANAN ---
-MAX_VIOLATIONS = 3  # Berapa kali boleh melanggar rate limit sebelum diblokir
-THRESHOLD_SECONDS = 1.5
 
 class SecuredCiscoCipher:
-    # ... (Method init, get_char, encrypt, decrypt sama seperti sebelumnya) ...
     def __init__(self):
         self.alphabet = "abcdefghijklmnopqrstuvwxyz"
         self.router_data = {
@@ -25,11 +19,20 @@ class SecuredCiscoCipher:
             'y': [5, 4, 0, 1, 2], 'z': [5, 4, 0, 1, 2]
         }
 
+    def get_char(self, value):
+        if value == 0: return 'z'
+        return self.alphabet[(value - 1) % 26]
+
     def encrypt(self, text):
-        text = re.sub(r'[^a-zA-Z\s]', '', text)[:500]
+        # Anti-Injection: Hanya izinkan alfabet dan spasi
+        text = re.sub(r'[^a-zA-Z\s]', '', text)
+        if len(text) > 500: text = text[:500] # Hard limit length
+        
         encoded_words = []
         for char in text.lower():
-            if char == " ": encoded_words.append("/"); continue
+            if char == " ":
+                encoded_words.append("/")
+                continue
             if char in self.router_data:
                 d = self.router_data[char]
                 v1, v2, v3 = d[0]*d[1], d[2], d[-2]*d[-1]
@@ -38,87 +41,117 @@ class SecuredCiscoCipher:
         return "  ".join(encoded_words)
 
     def decrypt(self, cipher_text):
+        # Anti-Injection & DDoS: Limit jumlah blok dan bersihkan karakter berbahaya
         cipher_text = re.sub(r'[^a-zA-Z0-9\s/|]', '', cipher_text)
-        blocks = cipher_text.split("  ")[:100]
+        blocks = cipher_text.replace('\xa0', ' ').split("  ")
+        
+        if len(blocks) > 200: # Anti-DDoS limit
+            return "Error: Pesan terlalu panjang."
+
         try:
             decoded = ""
             for block in blocks:
-                if block.strip() == "/": decoded += " "
+                if block.strip() == "/":
+                    decoded += " "
                 elif "|" in block:
-                    h_val = block.split("|")[-1].strip()
+                    # Pastikan format blok valid sebelum diproses
+                    parts = block.split("|")
+                    h_val = parts[-1].strip()
                     if h_val.isdigit():
                         idx = int(h_val) - 1
-                        if 0 <= idx < 26: decoded += self.alphabet[idx]
+                        if 0 <= idx < 26:
+                            decoded += self.alphabet[idx]
             return decoded
-        except: return "Invalid Format"
+        except Exception:
+            return "Format tidak valid."
 
-    def get_char(self, value):
-        if value == 0: return 'z'
-        return self.alphabet[(value - 1) % 26]
+# --- INITIALIZATION ---
+st.set_page_config(page_title="CRCC-X v2 Secure", page_icon="🛡️")
 
-# --- SESSION STATE & DETEKSI ---
-if 'violations' not in st.session_state: st.session_state.violations = 0
-if 'is_blocked' not in st.session_state: st.session_state.is_blocked = False
-if 'last_time' not in st.session_state: st.session_state.last_time = 0
-
-def trigger_tarpit():
-    """Menyuntikkan JS yang akan memakan CPU client jika terdeteksi serangan."""
-    components.html("""
-        <script>
-        console.log("Security Triggered: Resource Tarpit Active.");
-        // Membuat loop berat di sisi client tanpa membebani server
-        let data = [];
-        for (let i = 0; i < 1000000; i++) {
-            data.push(Math.random() * Math.random());
-            if (i % 100 == 0) console.log("System Overload: " + i);
-        }
-        // Redirect ke situs tak berguna untuk membersihkan session
-        alert("Aktivitas mencurigakan terdeteksi. Browser Anda melambat untuk verifikasi keamanan.");
-        window.location.href = "https://www.google.com";
-        </script>
-    """, height=0)
-
-# --- UI LOGIC ---
-st.set_page_config(page_title="CRCC-X v2 Ultra Secure")
-
-# Jika user sudah diblokir
-if st.session_state.is_blocked:
-    st.error("🚫 AKSES DIBLOKIR: Terdeteksi aktivitas automasi berbahaya.")
-    trigger_tarpit()
-    st.stop()
+# Clean UI Header Removal
+st.markdown("""
+    <style>
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    header {visibility: hidden;}
+    </style>
+""", unsafe_allow_html=True)
 
 cipher = SecuredCiscoCipher()
 
-st.title("🛡️ CRCC-X v2: Ultra Secure Engine")
+# Initialize Session States
+if 'last_action_time' not in st.session_state: st.session_state.last_action_time = 0
+if 'target_char' not in st.session_state: st.session_state.target_char = random.choice(string.ascii_lowercase)
+if 'score' not in st.session_state: st.session_state.score = 0
 
-user_input = st.text_area("Input:", max_chars=1000)
+# --- RATE LIMITING FUNCTION ---
+def check_rate_limit():
+    current_time = time.time()
+    # Limit 1 request per 1.5 detik
+    if current_time - st.session_state.last_action_time < 1.5:
+        return False
+    st.session_state.last_action_time = current_time
+    return True
 
-if st.button("🚀 PROSES"):
-    now = time.time()
-    
-    # Cek Rate Limit
-    if now - st.session_state.last_time < THRESHOLD_SECONDS:
-        st.session_state.violations += 1
-        st.warning(f"⚠️ Peringatan: Jangan spam! (Pelanggaran {st.session_state.violations}/{MAX_VIOLATIONS})")
-        
-        if st.session_state.violations >= MAX_VIOLATIONS:
-            st.session_state.is_blocked = True
-            st.rerun()
-    else:
-        # Reset perlahan jika user mulai normal
-        if st.session_state.violations > 0:
-            st.session_state.violations -= 0.5
-            
-        st.session_state.last_time = now
-        
-        # Eksekusi normal
+# --- UI UTAMA ---
+st.title("🛡️ CRCC-X v2: Secure Engine")
+
+# Anti-DDoS: max_chars=1000 limit di tingkat UI
+user_input = st.text_area("Input Teks atau Kode Cipher:", 
+                          placeholder="Ketik pesan (Max 1000 char)...", 
+                          height=120, 
+                          max_chars=1000)
+
+col1, col2, col3 = st.columns([1, 1, 1])
+with col2:
+    run_button = st.button("🚀 JALANKAN PROSES", use_container_width=True)
+
+if run_button:
+    if not check_rate_limit():
+        st.warning("⚠️ Terlalu cepat! Harap tunggu sebentar (Rate Limited).")
+    elif user_input.strip():
         if "|" in user_input:
-            st.success(f"Hasil: {cipher.decrypt(user_input)}")
+            with st.spinner('Menganalisis keamanan & mendekripsi...'):
+                result = cipher.decrypt(user_input)
+                st.success(f"Hasil Dekripsi: **{result}**")
         else:
-            st.code(cipher.encrypt(user_input))
+            with st.spinner('Mengamankan data & mengenkripsi...'):
+                st.code(cipher.encrypt(user_input))
+    else:
+        st.warning("Input tidak boleh kosong.")
 
-# Sidebar Info
-st.sidebar.subheader("Security Monitoring")
-st.sidebar.write(f"Violations Score: {st.session_state.violations}")
-if st.session_state.violations > 1:
-    st.sidebar.warning("Status: Suspicious Activity")
+st.markdown("---")
+st.write("### 🎮 Tebak Cipher")
+
+# Box Tantangan
+st.subheader(f"Enkripsi Huruf: :red[{st.session_state.target_char}]")
+player_guess = st.text_input("Jawabanmu:", placeholder="v1 v2 v3 | h", max_chars=50)
+
+g_col1, g_col2 = st.columns(2)
+
+with g_col1:
+    if st.button("🎯 Cek Jawaban", use_container_width=True):
+        if not check_rate_limit():
+            st.warning("Rate limit aktif.")
+        else:
+            correct_answer = cipher.encrypt(st.session_state.target_char).strip()
+            if player_guess.strip() == correct_answer:
+                st.balloons()
+                st.success("Tepat! +10 XP")
+                st.session_state.score += 10
+                st.session_state.target_char = random.choice(string.ascii_lowercase)
+                time.sleep(1)
+                st.rerun()
+            else:
+                st.error("Jawaban tidak sesuai dengan algoritma router.")
+
+with g_col2:
+    if st.button("🔄 Ganti Huruf", use_container_width=True):
+        st.session_state.target_char = random.choice(string.ascii_lowercase)
+        st.rerun()
+
+# Sidebar Stats
+st.sidebar.metric("Security Status", "PROTECTED")
+st.sidebar.metric("User Score", f"{st.session_state.score} XP")
+st.sidebar.divider()
+st.sidebar.info("Rate limit: 1.5s\nMax input: 1000 chars\nAnti-Injection: Active")
