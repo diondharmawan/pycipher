@@ -1,4 +1,5 @@
 import streamlit as st
+import streamlit.components.v1 as components  # Tambahan untuk redirect & embed
 import re
 import time
 import random
@@ -24,7 +25,6 @@ class SecuredCiscoCipher:
         return self.alphabet[(value - 1) % 26]
 
     def encrypt(self, text):
-        # Anti-Injection: Hanya izinkan alfabet dan spasi
         text = re.sub(r'[^a-zA-Z\s]', '', text)
         if len(text) > 500: text = text[:500] 
         
@@ -41,7 +41,6 @@ class SecuredCiscoCipher:
         return "  ".join(encoded_words)
 
     def decrypt(self, cipher_text):
-        # Anti-Injection & DDoS
         cipher_text = re.sub(r'[^a-zA-Z0-9\s/|]', '', cipher_text)
         blocks = cipher_text.replace('\xa0', ' ').split("  ")
         
@@ -67,6 +66,7 @@ class SecuredCiscoCipher:
 # --- INITIALIZATION ---
 st.set_page_config(page_title="CRCC-X v2 Secure", page_icon="🛡️")
 
+# CSS untuk menyembunyikan elemen standar
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
@@ -77,52 +77,45 @@ st.markdown("""
 
 cipher = SecuredCiscoCipher()
 
+# Initialize Session States
 if 'last_action_time' not in st.session_state: st.session_state.last_action_time = 0
 if 'target_char' not in st.session_state: st.session_state.target_char = random.choice(string.ascii_lowercase)
 if 'score' not in st.session_state: st.session_state.score = 0
 if 'violation_count' not in st.session_state: st.session_state.violation_count = 0
 
-# --- IMPROVED REDIRECT FUNCTION ---
+# --- REDIRECT/EMBED FUNCTION (PERUBAHAN DI SINI) ---
 def trigger_dos_protection():
-    # Menampilkan pesan error yang sangat jelas sebelum redirect
-    st.error("🚨 DOS ATTACK DETECTED! REDIRECTING TO QUARANTINE...")
+    st.error("🚨 SERANGAN TERDETEKSI. ANDA WAJIB MENONTON VIDEO INI SEBELUM MELANJUTKAN.")
     
-    # 1. Gunakan JavaScript via st.markdown untuk mencoba menembus iframe
-    redirect_html = """
-        <script>
-            setTimeout(function(){
-                window.top.location.href = 'https://www.youtube.com/watch?v=c5EevDyeQUE';
-            }, 1000);
-        </script>
+    # Script embed streamable yang diberikan
+    streamable_html = """
+    <div style="position:relative; width:100%; height:0px; padding-bottom:62.284%">
+        <iframe allow="fullscreen;autoplay" allowfullscreen height="100%" 
+        src="https://streamable.com/e/ldpxpp?autoplay=1&nocontrols=1" 
+        width="100%" style="border:none; width:100%; height:100%; position:absolute; left:0px; top:0px; overflow:hidden;">
+        </iframe>
+    </div>
     """
-    st.markdown(redirect_html, unsafe_allow_html=True)
+    # Menampilkan video secara langsung di aplikasi
+    components.html(streamable_html, height=500)
     
-    # 2. Link manual sebagai cadangan jika JS diblokir browser
-    st.markdown(
-        """
-        <div style="padding:20px; background-color:red; color:white; text-align:center; border-radius:10px;">
-            <h3>SISTEM TERKUNCI</h3>
-            <p>Browser Anda memblokir redirect otomatis. Silakan klik link di bawah untuk verifikasi keamanan:</p>
-            <a href="https://www.youtube.com/watch?v=c5EevDyeQUE" style="color:yellow; font-weight:bold; font-size:20px;">LANJUTKAN KE KARANTINA</a>
-        </div>
-        """, 
-        unsafe_allow_html=True
-    )
+    st.info("Akses Anda telah dibatasi karena aktivitas mencurigakan.")
     st.stop()
 
 # --- RATE LIMITING FUNCTION ---
 def check_rate_limit():
     current_time = time.time()
+    # Limit 1.5 detik
     if current_time - st.session_state.last_action_time < 1.5:
         st.session_state.violation_count += 1
-        if st.session_state.violation_count >= 5:
+        # Jika melanggar lebih dari 4 kali berturut-turut
+        if st.session_state.violation_count >= 4:
             trigger_dos_protection()
         return False
     
+    # Jika berhasil (tidak melanggar), reset violation count
     st.session_state.last_action_time = current_time
-    # Reset pelanggaran perlahan jika user mulai bertindak normal
-    if st.session_state.violation_count > 0:
-        st.session_state.violation_count -= 1
+    st.session_state.violation_count = 0
     return True
 
 # --- UI UTAMA ---
@@ -139,7 +132,7 @@ with col2:
 
 if run_button:
     if not check_rate_limit():
-        st.warning(f"⚠️ Terlalu cepat! Pelanggaran: {st.session_state.violation_count}/5")
+        st.warning(f"⚠️ Terlalu cepat! Pelanggaran: {st.session_state.violation_count}/4")
     elif user_input.strip():
         if "|" in user_input:
             with st.spinner('Menganalisis keamanan & mendekripsi...'):
@@ -181,7 +174,7 @@ with g_col2:
         st.rerun()
 
 # Sidebar Stats
-st.sidebar.metric("Security Status", "PROTECTED" if st.session_state.violation_count < 3 else "UNDER ATTACK")
+st.sidebar.metric("Security Status", "PROTECTED" if st.session_state.violation_count < 2 else "WARNING")
 st.sidebar.metric("User Score", f"{st.session_state.score} XP")
 st.sidebar.divider()
-st.sidebar.info(f"Rate limit: 1.5s\nViolations: {st.session_state.violation_count}/5\nAnti-Injection: Active")
+st.sidebar.info(f"Rate limit: 1.5s\nPelanggaran: {st.session_state.violation_count}/4")
