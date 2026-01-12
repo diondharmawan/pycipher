@@ -54,8 +54,19 @@ class SecuredCiscoCipher:
         except:
             return "Format tidak valid."
 
-# --- INITIALIZATION ---
+# --- INITIALIZATION & STYLING ---
 st.set_page_config(page_title="CRCC-X v2 Pro", page_icon="🛡️")
+
+# CSS untuk menyembunyikan header Streamlit default agar tampilan clean
+hide_style = """
+    <style>
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    header {visibility: hidden;}
+    </style>
+"""
+st.markdown(hide_style, unsafe_allow_html=True)
+
 cipher = SecuredCiscoCipher()
 
 if 'target_char' not in st.session_state:
@@ -85,8 +96,8 @@ if run_button:
 
 st.markdown("---")
 
-# --- BAGIAN BARU: GAME TEBAK-TEBAKAN ---
-st.header("🎮 Tebak Cipher Game")
+# --- BAGIAN GAME (Header sudah dihapus) ---
+st.write("### 🎮 Tebak Cipher")
 st.write("Uji pemahamanmu! Enkripsi huruf di bawah ini dengan format: `v1 v2 v3 | h` (Contoh: `d4 0z b2 | 1`)")
 
 # Box Tantangan
@@ -103,7 +114,6 @@ with g_col1:
             st.balloons()
             st.success(f"LUAR BIASA! Jawaban benar. +10 Poin!")
             st.session_state.score += 10
-            # Ganti huruf baru setelah benar
             st.session_state.target_char = random.choice(string.ascii_lowercase)
             time.sleep(1)
             st.rerun()
