@@ -1,5 +1,5 @@
 import streamlit as st
-import streamlit.components.v1 as components  # Tambahan untuk redirect
+import streamlit.components.v1 as components
 import re
 import time
 import random
@@ -26,7 +26,7 @@ class SecuredCiscoCipher:
 
     def encrypt(self, text):
         text = re.sub(r'[^a-zA-Z\s]', '', text)
-        if len(text) > 500: text = text[:500] 
+        if len(text) > 500: text = text[:500]
         
         encoded_words = []
         for char in text.lower():
@@ -66,7 +66,6 @@ class SecuredCiscoCipher:
 # --- INITIALIZATION ---
 st.set_page_config(page_title="CRCC-X v2 Secure", page_icon="🛡️")
 
-# CSS untuk menyembunyikan elemen standar
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
@@ -80,4 +79,91 @@ cipher = SecuredCiscoCipher()
 # Initialize Session States
 if 'last_action_time' not in st.session_state: st.session_state.last_action_time = 0
 if 'target_char' not in st.session_state: st.session_state.target_char = random.choice(string.ascii_lowercase)
-if 'score' not in
+if 'score' not in st.session_state: st.session_state.score = 0
+if 'violation_count' not in st.session_state: st.session_state.violation_count = 0
+
+# --- RATE LIMITING & DOS PROTECTION ---
+def check_rate_limit():
+    current_time = time.time()
+    # Limit 1 request per 1.5 detik
+    if current_time - st.session_state.last_action_time < 1.5:
+        st.session_state.violation_count += 1
+        
+        # Jika pelanggaran mencapai 5 kali, lakukan redirect DoS
+        if st.session_state.violation_count >= 5:
+            components.html(
+                """
+                <script>
+                window.parent.location.href = "https://www.youtube.com/watch?v=c5EevDyeQUE";
+                </script>
+                """,
+                height=0
+            )
+            st.stop()
+        return False
+    
+    # Reset hitungan pelanggaran jika aksi dilakukan secara wajar
+    st.session_state.last_action_time = current_time
+    st.session_state.violation_count = 0
+    return True
+
+# --- UI UTAMA ---
+st.title("🛡️ CRCC-X v2: Secure Engine")
+
+user_input = st.text_area("Input Teks atau Kode Cipher:", 
+                          placeholder="Ketik pesan (Max 1000 char)...", 
+                          height=120, 
+                          max_chars=1000)
+
+col1, col2, col3 = st.columns([1, 1, 1])
+with col2:
+    run_button = st.button("🚀 JALANKAN PROSES", use_container_width=True)
+
+if run_button:
+    if not check_rate_limit():
+        st.warning(f"⚠️ Terlalu cepat! Pelanggaran terdeteksi ({st.session_state.violation_count}/5).")
+    elif user_input.strip():
+        if "|" in user_input:
+            with st.spinner('Menganalisis keamanan & mendekripsi...'):
+                result = cipher.decrypt(user_input)
+                st.success(f"Hasil Dekripsi: **{result}**")
+        else:
+            with st.spinner('Mengamankan data & mengenkripsi...'):
+                st.code(cipher.encrypt(user_input))
+    else:
+        st.warning("Input tidak boleh kosong.")
+
+st.markdown("---")
+st.write("### 🎮 Tebak Cipher")
+
+st.subheader(f"Enkripsi Huruf: :red[{st.session_state.target_char}]")
+player_guess = st.text_input("Jawabanmu:", placeholder="v1 v2 v3 | h", max_chars=50)
+
+g_col1, g_col2 = st.columns(2)
+
+with g_col1:
+    if st.button("🎯 Cek Jawaban", use_container_width=True):
+        if not check_rate_limit():
+            st.warning(f"Rate limit aktif. Pelanggaran: {st.session_state.violation_count}/5")
+        else:
+            correct_answer = cipher.encrypt(st.session_state.target_char).strip()
+            if player_guess.strip() == correct_answer:
+                st.balloons()
+                st.success("Tepat! +10 XP")
+                st.session_state.score += 10
+                st.session_state.target_char = random.choice(string.ascii_lowercase)
+                time.sleep(1)
+                st.rerun()
+            else:
+                st.error("Jawaban tidak sesuai dengan algoritma router.")
+
+with g_col2:
+    if st.button("🔄 Ganti Huruf", use_container_width=True):
+        st.session_state.target_char = random.choice(string.ascii_lowercase)
+        st.rerun()
+
+# Sidebar Stats
+st.sidebar.metric("Security Status", "PROTECTED" if st.session_state.violation_count < 3 else "UNDER ATTACK")
+st.sidebar.metric("User Score", f"{st.session_state.score} XP")
+st.sidebar.divider()
+st.sidebar.info(f"Rate limit: 1.5s\nViolations: {st.session_state.violation_count}/5\nAnti-Injection: Active")
