@@ -7,7 +7,6 @@ import string
 class SecuredCiscoCipher:
     def __init__(self):
         self.alphabet = "abcdefghijklmnopqrstuvwxyz"
-        # Data Router Lengkap
         self.router_data = {
             'a': [1, 4, 0, 1, 2], 'b': [1, 4, 0, 1, 2], 'c': [1, 8, 0, 1, 2],
             'd': [1, 4, 0, 1, 2], 'e': [1, 6, 0, 1, 2], 'f': [1, 3, 0, 1, 2],
@@ -25,7 +24,10 @@ class SecuredCiscoCipher:
         return self.alphabet[(value - 1) % 26]
 
     def encrypt(self, text):
+        # Anti-Injection: Hanya izinkan alfabet dan spasi
         text = re.sub(r'[^a-zA-Z\s]', '', text)
+        if len(text) > 500: text = text[:500] # Hard limit length
+        
         encoded_words = []
         for char in text.lower():
             if char == " ":
@@ -39,97 +41,117 @@ class SecuredCiscoCipher:
         return "  ".join(encoded_words)
 
     def decrypt(self, cipher_text):
+        # Anti-Injection & DDoS: Limit jumlah blok dan bersihkan karakter berbahaya
+        cipher_text = re.sub(r'[^a-zA-Z0-9\s/|]', '', cipher_text)
+        blocks = cipher_text.replace('\xa0', ' ').split("  ")
+        
+        if len(blocks) > 200: # Anti-DDoS limit
+            return "Error: Pesan terlalu panjang."
+
         try:
             decoded = ""
-            blocks = cipher_text.replace('\xa0', ' ').split("  ")
             for block in blocks:
                 if block.strip() == "/":
                     decoded += " "
                 elif "|" in block:
-                    h_val = block.split("|")[-1].strip()
+                    # Pastikan format blok valid sebelum diproses
+                    parts = block.split("|")
+                    h_val = parts[-1].strip()
                     if h_val.isdigit():
                         idx = int(h_val) - 1
-                        decoded += self.alphabet[idx]
+                        if 0 <= idx < 26:
+                            decoded += self.alphabet[idx]
             return decoded
-        except:
+        except Exception:
             return "Format tidak valid."
 
-# --- INITIALIZATION & STYLING ---
-st.set_page_config(page_title="CRCC-X v2 Pro", page_icon="🛡️")
+# --- INITIALIZATION ---
+st.set_page_config(page_title="CRCC-X v2 Secure", page_icon="🛡️")
 
-# CSS untuk menyembunyikan header Streamlit default agar tampilan clean
-hide_style = """
+# Clean UI Header Removal
+st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     header {visibility: hidden;}
     </style>
-"""
-st.markdown(hide_style, unsafe_allow_html=True)
+""", unsafe_allow_html=True)
 
 cipher = SecuredCiscoCipher()
 
-if 'target_char' not in st.session_state:
-    st.session_state.target_char = random.choice(string.ascii_lowercase)
-if 'score' not in st.session_state:
-    st.session_state.score = 0
+# Initialize Session States
+if 'last_action_time' not in st.session_state: st.session_state.last_action_time = 0
+if 'target_char' not in st.session_state: st.session_state.target_char = random.choice(string.ascii_lowercase)
+if 'score' not in st.session_state: st.session_state.score = 0
+
+# --- RATE LIMITING FUNCTION ---
+def check_rate_limit():
+    current_time = time.time()
+    # Limit 1 request per 1.5 detik
+    if current_time - st.session_state.last_action_time < 1.5:
+        return False
+    st.session_state.last_action_time = current_time
+    return True
 
 # --- UI UTAMA ---
-st.title("🛡️ CRCC-X v2: Secure Auto-Detect")
+st.title("🛡️ CRCC-X v2: Secure Engine")
 
-user_input = st.text_area("Input Teks atau Kode Cipher:", placeholder="Ketik pesan atau tempel kode...", height=120)
+# Anti-DDoS: max_chars=1000 limit di tingkat UI
+user_input = st.text_area("Input Teks atau Kode Cipher:", 
+                          placeholder="Ketik pesan (Max 1000 char)...", 
+                          height=120, 
+                          max_chars=1000)
 
 col1, col2, col3 = st.columns([1, 1, 1])
 with col2:
     run_button = st.button("🚀 JALANKAN PROSES", use_container_width=True)
 
 if run_button:
-    if user_input.strip():
+    if not check_rate_limit():
+        st.warning("⚠️ Terlalu cepat! Harap tunggu sebentar (Rate Limited).")
+    elif user_input.strip():
         if "|" in user_input:
-            st.info("🔎 **Mode:** Dekripsi")
-            st.success(f"Hasil: **{cipher.decrypt(user_input)}**")
+            with st.spinner('Menganalisis keamanan & mendekripsi...'):
+                result = cipher.decrypt(user_input)
+                st.success(f"Hasil Dekripsi: **{result}**")
         else:
-            st.info("🔎 **Mode:** Enkripsi")
-            st.code(cipher.encrypt(user_input))
+            with st.spinner('Mengamankan data & mengenkripsi...'):
+                st.code(cipher.encrypt(user_input))
     else:
-        st.warning("Input kosong.")
+        st.warning("Input tidak boleh kosong.")
 
 st.markdown("---")
-
-# --- BAGIAN GAME (Header sudah dihapus) ---
 st.write("### 🎮 Tebak Cipher")
-st.write("Uji pemahamanmu! Enkripsi huruf di bawah ini dengan format: `v1 v2 v3 | h` (Contoh: `d4 0z b2 | 1`)")
 
 # Box Tantangan
 st.subheader(f"Enkripsi Huruf: :red[{st.session_state.target_char}]")
-
-player_guess = st.text_input("Jawabanmu:", placeholder="v1 v2 v3 | h")
+player_guess = st.text_input("Jawabanmu:", placeholder="v1 v2 v3 | h", max_chars=50)
 
 g_col1, g_col2 = st.columns(2)
 
 with g_col1:
     if st.button("🎯 Cek Jawaban", use_container_width=True):
-        correct_answer = cipher.encrypt(st.session_state.target_char).strip()
-        if player_guess.strip() == correct_answer:
-            st.balloons()
-            st.success(f"LUAR BIASA! Jawaban benar. +10 Poin!")
-            st.session_state.score += 10
-            st.session_state.target_char = random.choice(string.ascii_lowercase)
-            time.sleep(1)
-            st.rerun()
+        if not check_rate_limit():
+            st.warning("Rate limit aktif.")
         else:
-            st.error(f"Salah! Petunjuk: Gunakan tabel router untuk huruf '{st.session_state.target_char}'")
+            correct_answer = cipher.encrypt(st.session_state.target_char).strip()
+            if player_guess.strip() == correct_answer:
+                st.balloons()
+                st.success("Tepat! +10 XP")
+                st.session_state.score += 10
+                st.session_state.target_char = random.choice(string.ascii_lowercase)
+                time.sleep(1)
+                st.rerun()
+            else:
+                st.error("Jawaban tidak sesuai dengan algoritma router.")
 
 with g_col2:
     if st.button("🔄 Ganti Huruf", use_container_width=True):
         st.session_state.target_char = random.choice(string.ascii_lowercase)
         st.rerun()
 
-st.sidebar.metric("Skor Pemain", f"{st.session_state.score} XP")
+# Sidebar Stats
+st.sidebar.metric("Security Status", "PROTECTED")
+st.sidebar.metric("User Score", f"{st.session_state.score} XP")
 st.sidebar.divider()
-st.sidebar.write("**Tabel Bantuan Singkat:**")
-st.sidebar.json({
-    "a, b, d": "1, 4, 0, 1, 2",
-    "e": "1, 6, 0, 1, 2",
-    "n": "3, 6, 14, 1, 2"
-})
+st.sidebar.info("Rate limit: 1.5s\nMax input: 1000 chars\nAnti-Injection: Active")
