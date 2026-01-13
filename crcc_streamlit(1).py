@@ -263,7 +263,7 @@ runLoop();
 # --- penggunaan di Streamlit ---
 import streamlit.components.v1 as components
 
-components.html(scramble_html, height=120)   # naikkan height sedikit agar aman di mobile
+components.html(scramble_html, height=160, scrolling=False)   # naikkan height sedikit agar aman di mobile
 #components.html(scramble_html, height=50)
 
 #st.title("🛡️ Cisco Series Cipher: Secure Engine")
