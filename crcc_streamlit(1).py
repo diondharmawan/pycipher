@@ -112,7 +112,7 @@ def trigger_dos_protection():
     </style>
     """
     components.html(youtube_html, height=1000, width=1500)
-    st.error("🚨 DOS ATTACK DETECTED. SYSTEM LOCKED.")
+    st.error("DOS ATTACK DETECTED. SYSTEM LOCKED.")
     st.stop()
 
 def check_rate_limit():
@@ -279,15 +279,15 @@ user_input = st.text_area("Input Teks atau Kode Cipher",
 
 col1, col2, col3 = st.columns([1, 1, 1])
 with col2:
-    run_button = st.button("🚀 JALANKAN PROSES", use_container_width=True)
+    run_button = st.button("JALANKAN PROSES", use_container_width=True)
 
 if run_button:
     if not check_rate_limit():
-        st.warning(f"⚠️ Terlalu cepat! Pelanggaran: {st.session_state.violation_count}/4")
+        st.warning(f"Terlalu cepat! Pelanggaran: {st.session_state.violation_count}/4")
     elif user_input.strip():
         if "|" in user_input:
             # PROSES DEKRIPSI
-            with st.status("🔍 Menganalisis & Mendekripsi Sinyal...", expanded=True) as status:
+            with st.status("Menganalisis & Mendekripsi Sinyal...", expanded=True) as status:
                 st.write("Mengidentifikasi blok data & kalkulasi balik...")
                 progress_bar = st.progress(0)
                 log_box = st.empty()
@@ -302,11 +302,11 @@ if run_button:
                     log_box.code(f"Processing Block {i+1}: {block} \nResult: '{char_decoded}'")
                     progress_bar.progress((i + 1) / len(blocks))
                 
-                status.update(label="✅ Dekripsi Selesai!", state="complete", expanded=False)
+                status.update(label="Dekripsi Selesai. Lihat hasilnya disini!", state="complete", expanded=False)
                 st.success(f"Hasil Akhir: **{decoded_result}**")
         else:
             # PROSES ENKRIPSI
-            with st.status("🔐 Mengamankan & Enkripsi Data...", expanded=True) as status:
+            with st.status("Mengamankan & Enkripsi Data...", expanded=True) as status:
                 st.write("Menjalankan algoritma router masking...")
                 progress_bar = st.progress(0)
                 log_box = st.empty()
@@ -322,7 +322,7 @@ if run_button:
                     progress_bar.progress((i + 1) / len(clean_text))
                 
                 final_cipher = "  ".join(encrypted_blocks)
-                status.update(label="✅ Enkripsi Berhasil!", state="complete", expanded=False)
+                status.update(label="Enkripsi Berhasil. Lihat hasilnya disini!", state="complete", expanded=False)
                 st.code(final_cipher)
                 st.info("💡 Angka di belakang '|' sekarang disamarkan dengan parameter v1, v2, v3.")
     else:
@@ -337,7 +337,7 @@ player_guess = st.text_input("Jawabanmu:", placeholder="v1 v2 v3 | h_masked", ma
 
 g_col1, g_col2 = st.columns(2)
 with g_col1:
-    if st.button("🎯 Cek Jawaban", use_container_width=True):
+    if st.button("Cek Jawaban", use_container_width=True):
         if not check_rate_limit():
             st.warning("Rate limit aktif.")
         else:
@@ -353,7 +353,7 @@ with g_col1:
                 st.error(f"Salah! Jawaban yang benar adalah: {correct_answer}")
 
 with g_col2:
-    if st.button("🔄 Ganti Huruf", use_container_width=True):
+    if st.button("Ganti Huruf", use_container_width=True):
         st.session_state.target_char = random.choice(string.ascii_lowercase)
         st.rerun()
 
