@@ -235,8 +235,10 @@ const phrases = [
   'CISCO SERIES CIPHER',
   'ENCRYPT • DECRYPT',
   'SECURE YOUR DATA',
-  'HENGKER DILARANG MENYERANG'
-  'JANGAN DI DDOS, NANTI DOSA'
+  'NOT NEXT-GEN CIPHER',
+  'HENGKER DILARANG MENYERANG',
+  'KAORI CICAK' 
+
 ];
 
 let index = 0;
@@ -263,7 +265,7 @@ runLoop();
 # --- penggunaan di Streamlit ---
 import streamlit.components.v1 as components
 
-components.html(scramble_html, height=160, scrolling=False)   # naikkan height sedikit agar aman di mobile
+components.html(scramble_html, height=120)   # naikkan height sedikit agar aman di mobile
 #components.html(scramble_html, height=50)
 
 #st.title("🛡️ Cisco Series Cipher: Secure Engine")
