@@ -233,6 +233,7 @@ const fx = new TextScramble(el);
 
 const phrases = [
   'CISCO SERIES CIPHER',
+  'AUTO DETECT SYSTEM' ,
   'ENCRYPT • DECRYPT',
   'SECURE YOUR DATA',
   'NOT NEXT-GEN CIPHER',
