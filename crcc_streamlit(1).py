@@ -209,7 +209,7 @@ const runLoop = async () => {
 runLoop()
 </script>
 """
-components.html(scramble_html, height=50)
+components.html(scramble_html, height=200)
 #st.title("🛡️ Cisco Series Cipher: Secure Engine")
 st.caption("Algoritma terbaru dengan masking nilai indeks (h = idx + v1 + v2 + v3)")
 
