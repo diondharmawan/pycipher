@@ -160,7 +160,7 @@ if run_button:
                     log_box.code(f"Processing Block {i+1}: {block} \nResult: '{char_decoded}'")
                     progress_bar.progress((i + 1) / len(blocks))
                 
-                status.update(label="Dekripsi Selesai!", state="complete", expanded=False)
+                status.update(label="Dekripsi Selesai!. Klik Disini!", state="complete", expanded=False)
                 st.success(f"Hasil Akhir: **{decoded_result}**")
         else:
             # PROSES ENKRIPSI
@@ -180,7 +180,7 @@ if run_button:
                     progress_bar.progress((i + 1) / len(clean_text))
                 
                 final_cipher = "  ".join(encrypted_blocks)
-                status.update(label="Enkripsi Berhasil!", state="complete", expanded=False)
+                status.update(label="Enkripsi Berhasil! Klik disini!", state="complete", expanded=False)
                 st.code(final_cipher)
                 st.info("Angka di belakang '|' sekarang disamarkan dengan parameter v1, v2, v3.")
     else:
