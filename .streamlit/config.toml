@@ -1,5 +1,15 @@
-primaryColor = "F36295"
-backgroundColor = "#F0FF33"
-secondaryBackgroundColor = "#3183D1"
-textColor = "#03080C"
+[theme]
+# Warna utama untuk tombol, slider, dan aksen (Pink fuchsia dari F36295)
+primaryColor = "#F36295"
+
+# Latar belakang utama (Hitam keabuan sangat gelap agar kontras)
+backgroundColor = "#0E1117"
+
+# Latar belakang sekunder (Biru gelap dari 3183D1 yang digelapkan untuk Sidebar)
+secondaryBackgroundColor = "#1A232E"
+
+# Warna teks utama (Putih pudar agar tidak terlalu tajam di mata)
+textColor = "#FAFAFA"
+
+# Font standar
 font = "sans-serif"
