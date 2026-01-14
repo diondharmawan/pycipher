@@ -1,9 +1,91 @@
 import streamlit as st
-import streamlit.components.v1 as components 
+import streamlit.components.v1 as components
 import re
 import time
 import random
 import string
+
+# ────────────────────────────────────────────────
+#           DARK MODE + BASIC THEMING
+# ────────────────────────────────────────────────
+st.set_page_config(
+    page_title="Cisco Series Cipher",
+    page_icon="🛡️",
+    layout="centered",
+    initial_sidebar_state="auto"
+)
+
+# Dark theme utama (cukup kuat untuk sebagian besar elemen)
+st.markdown("""
+    <style>
+        /* Dark background utama */
+        [data-testid="stAppViewContainer"] {
+            background-color: #0e1117;
+        }
+        
+        /* Sidebar lebih gelap */
+        [data-testid="stSidebar"] {
+            background-color: #161b22 !important;
+        }
+        section[data-testid="stSidebar"] > div:first-child {
+            background-color: #161b22 !important;
+        }
+        
+        /* Text & elemen umum */
+        .stApp {
+            background-color: #0e1117;
+            color: #e6edf3;
+        }
+        
+        /* Header, title, markdown text */
+        h1, h2, h3, h4, h5, h6, p, div, label, span {
+            color: #e6edf3 !important;
+        }
+        
+        /* Text input, textarea */
+        .stTextInput > div > div > input,
+        .stTextArea > div > div > textarea {
+            background-color: #21262d;
+            color: #e6edf3;
+            border: 1px solid #30363d;
+        }
+        
+        /* Button */
+        .stButton > button {
+            background-color: #238636;
+            color: white;
+            border: none;
+        }
+        .stButton > button:hover {
+            background-color: #2ea043;
+        }
+        
+        /* Code block & status */
+        pre, code {
+            background-color: #161b22 !important;
+            color: #c9d1d9 !important;
+        }
+        
+        /* Progress bar */
+        .stProgress > div > div > div {
+            background-color: #238636 !important;
+        }
+        
+        /* Metric */
+        [data-testid="stMetricValue"] {
+            color: #58a6ff !important;
+        }
+        
+        /* Hide default Streamlit elements */
+        #MainMenu {visibility: hidden;}
+        footer {visibility: hidden;}
+        header {visibility: hidden;}
+    </style>
+""", unsafe_allow_html=True)
+
+# ────────────────────────────────────────────────
+#                 KELAS CIPHER (tetap sama)
+# ────────────────────────────────────────────────
 
 class SecuredCiscoCipher:
     def __init__(self):
@@ -46,7 +128,6 @@ class SecuredCiscoCipher:
         return "  ".join(encoded_words)
 
     def decrypt(self, cipher_text):
-        # Membersihkan karakter non-standar dan split blok
         blocks = cipher_text.replace('\xa0', ' ').strip().split("  ")
         
         if len(blocks) > 200:
@@ -61,14 +142,11 @@ class SecuredCiscoCipher:
                     parts = block.split("|")
                     h_masked = int(parts[-1].strip())
                     
-                    # Ekstrak nilai v1, v2, v3 dari teks sebelum pipa (|)
-                    # Contoh blok: "d4 0z z2 | 11"
                     sub_parts = parts[0].strip().split(" ")
                     v1 = int(re.sub(r'[^0-9]', '', sub_parts[0]))
                     v2 = int(re.sub(r'[^0-9]', '', sub_parts[1]))
                     v3 = int(re.sub(r'[^0-9]', '', sub_parts[2]))
                     
-                    # Kalkulasi balik index asli
                     h_original = h_masked - v1 - v2 - v3
                     idx = h_original - 1
                     
@@ -78,17 +156,9 @@ class SecuredCiscoCipher:
         except Exception:
             return "Format tidak valid."
 
-# --- INITIALIZATION ---
-st.set_page_config(page_title="Cisco Series Cipher", page_icon="🛡️")
-
-# Menyembunyikan elemen bawaan Streamlit
-st.markdown("""
-    <style>
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
-    header {visibility: hidden;}
-    </style>
-""", unsafe_allow_html=True)
+# ────────────────────────────────────────────────
+#                   APLIKASI UTAMA
+# ────────────────────────────────────────────────
 
 cipher = SecuredCiscoCipher()
 
@@ -126,9 +196,12 @@ def check_rate_limit():
     st.session_state.violation_count = 0
     return True
 
-# --- UI UTAMA ---
+# ────────────────────────────────────────────────
+#                     UI UTAMA
+# ────────────────────────────────────────────────
+
 st.sidebar.image("https://s6.imgcdn.dev/YzpPD2.png", width=250)
-#
+
 scramble_html = """
 <style>
     #scramble-container {
@@ -150,7 +223,6 @@ scramble_html = """
         word-break: break-word;
     }
 
-    /* Responsive font size */
     @media (max-width: 768px) {
         #scramble-text {
             font-size: clamp(28px, 7vw, 42px) !important;
@@ -169,6 +241,7 @@ scramble_html = """
 </div>
 
 <script>
+// ... (script TextScramble tetap sama seperti kode asli Anda)
 class TextScramble {
   constructor(el) {
     this.el = el;
@@ -185,7 +258,7 @@ class TextScramble {
     for (let i = 0; i < length; i++) {
       const from = oldText[i] || '';
       const to = newText[i] || '';
-      const start = Math.floor(Math.random() * 80) + 40;   // lebih cepat sedikit di mobile
+      const start = Math.floor(Math.random() * 80) + 40;
       const end = start + Math.floor(Math.random() * 100) + 60;
       this.queue.push({ from, to, start, end, char: null });
     }
@@ -239,7 +312,6 @@ const phrases = [
   'NOT NEXT-GEN CIPHER',
   'HENGKER DILARANG MENYERANG',
   'KAORI CICAK' 
-
 ];
 
 let index = 0;
@@ -248,29 +320,21 @@ const runLoop = async () => {
   const text = phrases[index];
   await fx.setText(text);
   
-  // Durasi tampil lebih pendek di mobile agar tidak terlalu lama scroll
   const displayTime = window.innerWidth < 768 ? 4000 : 6000;
   
   setTimeout(() => {
-    el.innerHTML = '';           // bersihkan dulu
+    el.innerHTML = '';
     index = (index + 1) % phrases.length;
     runLoop();
   }, displayTime);
 };
 
-// Mulai
 runLoop();
 </script>
 """
 
-# --- penggunaan di Streamlit ---
-import streamlit.components.v1 as components
+components.html(scramble_html, height=120)
 
-components.html(scramble_html, height=120)   # naikkan height sedikit agar aman di mobile
-#components.html(scramble_html, height=50)
-
-#st.title("🛡️ Cisco Series Cipher: Secure Engine")
-#st.image("https://s6.imgcdn.dev/YzpPD2.png", use_container_width=True)
 st.caption("Algoritma terbaru dengan masking nilai indeks (h = idx + v1 + v2 + v3)")
 
 user_input = st.text_area("Input Teks atau Kode Cipher", 
@@ -282,12 +346,15 @@ col1, col2, col3 = st.columns([1, 1, 1])
 with col2:
     run_button = st.button("JALANKAN PROSES", use_container_width=True)
 
+# ────────────────────────────────────────────────
+#         (Bagian proses enkripsi & dekripsi tetap sama)
+# ────────────────────────────────────────────────
+
 if run_button:
     if not check_rate_limit():
         st.warning(f"Terlalu cepat! Pelanggaran: {st.session_state.violation_count}/4")
     elif user_input.strip():
         if "|" in user_input:
-            # PROSES DEKRIPSI
             with st.status("Menganalisis & Mendekripsi Sinyal...", expanded=True) as status:
                 st.write("Mengidentifikasi blok data & kalkulasi balik...")
                 progress_bar = st.progress(0)
@@ -306,7 +373,6 @@ if run_button:
                 status.update(label="Dekripsi Selesai. Lihat hasilnya disini!", state="complete", expanded=False)
                 st.success(f"Hasil Akhir: **{decoded_result}**")
         else:
-            # PROSES ENKRIPSI
             with st.status("Mengamankan & Enkripsi Data...", expanded=True) as status:
                 st.write("Menjalankan algoritma router masking...")
                 progress_bar = st.progress(0)
@@ -331,7 +397,10 @@ if run_button:
 
 st.markdown("---")
 
-# --- GAME TEBAK CIPHER ---
+# ────────────────────────────────────────────────
+#                   GAME TEBAK CIPHER
+# ────────────────────────────────────────────────
+
 st.write("### 🎮 Tebak Cipher")
 st.subheader(f"Enkripsi Huruf: :red[{st.session_state.target_char}]")
 player_guess = st.text_input("Jawabanmu:", placeholder="v1 v2 v3 | h_masked", max_chars=50)
@@ -358,7 +427,10 @@ with g_col2:
         st.session_state.target_char = random.choice(string.ascii_lowercase)
         st.rerun()
 
-# --- SIDEBAR ---
+# ────────────────────────────────────────────────
+#                     SIDEBAR
+# ────────────────────────────────────────────────
+
 st.sidebar.metric("Security Status", "PROTECTED" if st.session_state.violation_count < 2 else "WARNING")
 st.sidebar.metric("User Score", f"{st.session_state.score} XP")
 st.sidebar.divider()
