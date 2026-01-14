@@ -112,7 +112,7 @@ def trigger_dos_protection():
     </style>
     """
     components.html(youtube_html, height=1000, width=1500)
-    st.error("🚨 DOS ATTACK DETECTED. SYSTEM LOCKED.")
+    st.error("DOS ATTACK DETECTED. SYSTEM LOCKED.")
     st.stop()
 
 def check_rate_limit():
@@ -130,86 +130,145 @@ def check_rate_limit():
 st.sidebar.image("https://s6.imgcdn.dev/YzpPD2.png", width=250)
 #
 scramble_html = """
-<div id="scramble-text" style="font-size: 50px; font-weight: 800; color: white; font-family: 'Courier New', Courier, monospace; min-height: 60px;"></div>
+<style>
+    #scramble-container {
+        width: 100%;
+        text-align: center;
+        padding: 10px 0;
+        overflow: hidden;
+    }
+    
+    #scramble-text {
+        font-family: 'Courier New', Courier, monospace;
+        font-weight: 800;
+        color: white;
+        min-height: 1.2em;
+        line-height: 1.3;
+        margin: 0 auto;
+        display: inline-block;
+        max-width: 100%;
+        word-break: break-word;
+    }
+
+    /* Responsive font size */
+    @media (max-width: 768px) {
+        #scramble-text {
+            font-size: clamp(28px, 7vw, 42px) !important;
+        }
+    }
+    
+    @media (min-width: 769px) {
+        #scramble-text {
+            font-size: clamp(40px, 6.5vw, 64px) !important;
+        }
+    }
+</style>
+
+<div id="scramble-container">
+    <div id="scramble-text"></div>
+</div>
 
 <script>
 class TextScramble {
   constructor(el) {
-    this.el = el
-    this.chars = '!<>-_\\/[]{}—=+*^?#________'
-    this.update = this.update.bind(this)
+    this.el = el;
+    this.chars = '!<>-_\\/[]{}—=+*^?#________';
+    this.update = this.update.bind(this);
   }
+
   setText(newText) {
-    const oldText = this.el.innerText
-    const length = Math.max(oldText.length, newText.length)
-    const promise = new Promise((resolve) => this.resolve = resolve)
-    this.queue = []
+    const oldText = this.el.innerText;
+    const length = Math.max(oldText.length, newText.length);
+    const promise = new Promise(resolve => this.resolve = resolve);
+    
+    this.queue = [];
     for (let i = 0; i < length; i++) {
-      const from = oldText[i] || ''
-      const to = newText[i] || ''
-      // Kecepatan lambat (120)
-      const start = Math.floor(Math.random() * 120)
-      const end = start + Math.floor(Math.random() * 120)
-      this.queue.push({ from, to, start, end })
+      const from = oldText[i] || '';
+      const to = newText[i] || '';
+      const start = Math.floor(Math.random() * 80) + 40;   // lebih cepat sedikit di mobile
+      const end = start + Math.floor(Math.random() * 100) + 60;
+      this.queue.push({ from, to, start, end, char: null });
     }
-    cancelAnimationFrame(this.frameRequest)
-    this.frame = 0
-    this.update()
-    return promise
+
+    cancelAnimationFrame(this.frameRequest);
+    this.frame = 0;
+    this.update();
+    return promise;
   }
+
   update() {
-    let output = ''
-    let complete = 0
-    for (let i = 0, n = this.queue.length; i < n; i++) {
-      let { from, to, start, end, char } = this.queue[i]
+    let output = '';
+    let complete = 0;
+
+    for (let i = 0; i < this.queue.length; i++) {
+      let { from, to, start, end, char } = this.queue[i];
+      
       if (this.frame >= end) {
-        complete++
-        output += to
+        complete++;
+        output += to;
       } else if (this.frame >= start) {
-        if (!char || Math.random() < 0.1) {
-          char = this.randomChar()
-          this.queue[i].char = char
+        if (!char || Math.random() < 0.12) {
+          char = this.chars[Math.floor(Math.random() * this.chars.length)];
+          this.queue[i].char = char;
         }
-        output += `<span style="color: #ff4b4b;">${char}</span>`
+        output += `<span style="color: #ff4b4b;">${char}</span>`;
       } else {
-        output += from
+        output += from;
       }
     }
-    this.el.innerHTML = output
+
+    this.el.innerHTML = output;
+
     if (complete === this.queue.length) {
-      this.resolve()
+      this.resolve();
     } else {
-      this.frameRequest = requestAnimationFrame(this.update)
-      this.frame++
+      this.frameRequest = requestAnimationFrame(this.update);
+      this.frame++;
     }
   }
-  randomChar() {
-    return this.chars[Math.floor(Math.random() * this.chars.length)]
-  }
 }
 
-const el = document.getElementById('scramble-text')
-const fx = new TextScramble(el)
+const el = document.getElementById('scramble-text');
+const fx = new TextScramble(el);
 
-// FUNGSI LOOPING
+const phrases = [
+  'CISCO SERIES CIPHER',
+  'AUTO DETECT SYSTEM' ,
+  'ENCRYPT • DECRYPT',
+  'SECURE YOUR DATA',
+  'NOT NEXT-GEN CIPHER',
+  'HENGKER DILARANG MENYERANG',
+  'KAORI CICAK' 
+
+];
+
+let index = 0;
+
 const runLoop = async () => {
-  // 1. Jalankan animasi teks
-  await fx.setText('CISCO SERIES CIPHER')
+  const text = phrases[index];
+  await fx.setText(text);
   
-  // 2. Tunggu selama 5 detik (5000 milidetik) setelah teks terbentuk sempurna
+  // Durasi tampil lebih pendek di mobile agar tidak terlalu lama scroll
+  const displayTime = window.innerWidth < 768 ? 4000 : 6000;
+  
   setTimeout(() => {
-    // 3. Reset teks menjadi kosong dulu agar efek mulai dari nol lagi
-    el.innerText = "" 
-    // 4. Panggil kembali fungsi ini
-    runLoop()
-  }, 10000)
-}
+    el.innerHTML = '';           // bersihkan dulu
+    index = (index + 1) % phrases.length;
+    runLoop();
+  }, displayTime);
+};
 
-// Jalankan pertama kali
-runLoop()
+// Mulai
+runLoop();
 </script>
 """
-components.html(scramble_html, height=50)
+
+# --- penggunaan di Streamlit ---
+import streamlit.components.v1 as components
+
+components.html(scramble_html, height=120)   # naikkan height sedikit agar aman di mobile
+#components.html(scramble_html, height=50)
+
 #st.title("🛡️ Cisco Series Cipher: Secure Engine")
 #st.image("https://s6.imgcdn.dev/YzpPD2.png", use_container_width=True)
 st.caption("Algoritma terbaru dengan masking nilai indeks (h = idx + v1 + v2 + v3)")
@@ -221,15 +280,15 @@ user_input = st.text_area("Input Teks atau Kode Cipher",
 
 col1, col2, col3 = st.columns([1, 1, 1])
 with col2:
-    run_button = st.button("🚀 JALANKAN PROSES", use_container_width=True)
+    run_button = st.button("JALANKAN PROSES", use_container_width=True)
 
 if run_button:
     if not check_rate_limit():
-        st.warning(f"⚠️ Terlalu cepat! Pelanggaran: {st.session_state.violation_count}/4")
+        st.warning(f"Terlalu cepat! Pelanggaran: {st.session_state.violation_count}/4")
     elif user_input.strip():
         if "|" in user_input:
             # PROSES DEKRIPSI
-            with st.status("🔍 Menganalisis & Mendekripsi Sinyal...", expanded=True) as status:
+            with st.status("Menganalisis & Mendekripsi Sinyal...", expanded=True) as status:
                 st.write("Mengidentifikasi blok data & kalkulasi balik...")
                 progress_bar = st.progress(0)
                 log_box = st.empty()
@@ -244,11 +303,11 @@ if run_button:
                     log_box.code(f"Processing Block {i+1}: {block} \nResult: '{char_decoded}'")
                     progress_bar.progress((i + 1) / len(blocks))
                 
-                status.update(label="✅ Dekripsi Selesai!", state="complete", expanded=False)
+                status.update(label="Dekripsi Selesai. Lihat hasilnya disini!", state="complete", expanded=False)
                 st.success(f"Hasil Akhir: **{decoded_result}**")
         else:
             # PROSES ENKRIPSI
-            with st.status("🔐 Mengamankan & Enkripsi Data...", expanded=True) as status:
+            with st.status("Mengamankan & Enkripsi Data...", expanded=True) as status:
                 st.write("Menjalankan algoritma router masking...")
                 progress_bar = st.progress(0)
                 log_box = st.empty()
@@ -264,7 +323,7 @@ if run_button:
                     progress_bar.progress((i + 1) / len(clean_text))
                 
                 final_cipher = "  ".join(encrypted_blocks)
-                status.update(label="✅ Enkripsi Berhasil!", state="complete", expanded=False)
+                status.update(label="Enkripsi Berhasil. Lihat hasilnya disini!", state="complete", expanded=False)
                 st.code(final_cipher)
                 st.info("💡 Angka di belakang '|' sekarang disamarkan dengan parameter v1, v2, v3.")
     else:
@@ -279,7 +338,7 @@ player_guess = st.text_input("Jawabanmu:", placeholder="v1 v2 v3 | h_masked", ma
 
 g_col1, g_col2 = st.columns(2)
 with g_col1:
-    if st.button("🎯 Cek Jawaban", use_container_width=True):
+    if st.button("Cek Jawaban", use_container_width=True):
         if not check_rate_limit():
             st.warning("Rate limit aktif.")
         else:
@@ -295,7 +354,7 @@ with g_col1:
                 st.error(f"Salah! Jawaban yang benar adalah: {correct_answer}")
 
 with g_col2:
-    if st.button("🔄 Ganti Huruf", use_container_width=True):
+    if st.button("Ganti Huruf", use_container_width=True):
         st.session_state.target_char = random.choice(string.ascii_lowercase)
         st.rerun()
 
